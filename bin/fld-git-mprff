@@ -1,20 +1,18 @@
 #!/bin/bash
 
-# $1: branch name
-
 # helpers
 bold() {
   echo "$(tput bold)$*" "$(tput sgr0)";
 }
 
 # Get name of current branch: https://stackoverflow.com/a/6245587
-CURRENT_BRACH=$(git branch | grep \* | cut -d ' ' -f2)
-ORIGIN_BRANCH="origin/${CURRENT_BRACH}"
+current_brach=$(git branch | grep \* | cut -d ' ' -f2)
+origin_branch="origin/${current_brach}"
 
-bold "checking if PR for ${CURRENT_BRACH} exists"
+bold "checking if PR for ${current_brach} exists"
 
 # Check for open PR for which head is the current branch.
-PR=$(hub pr list -s open -h $CURRENT_BRACH -f "%i: '%t' (%B)")
+PR=$(hub pr list -s open -h $current_brach -f "%i: '%t' -> (%B)")
 
 if [ -z "$PR" ]
 then
@@ -27,30 +25,27 @@ fi
 bold "calling git fetch to sync origin"
 git fetch
 
-local_head=$(git log "${CURRENT_BRACH}" | head -1)
-origin_head=$(git log "${ORIGIN_BRANCH}" | head -1)
+local_head=$(git log "${current_brach}" | head -1)
+origin_head=$(git log "${origin_branch}" | head -1)
 
 if [ "$local_head" != "$origin_head" ]
 then
-  bold "'${CURRENT_BRACH}' is not in sync with '${ORIGIN_BRANCH}', aborting merge!"
-  # COMMITS_MISSING_ON_REMOTE=$(git log "${ORIGIN_BRANCH}..${CURRENT_BRACH}")
-  # EXTRA_COMMITS_ON_REMOTE=$(git log "${CURRENT_BRACH}..${ORIGIN_BRANCH}")
+  bold "'${current_brach}' is not in sync with '${origin_branch}', aborting merge!"
+  # commits_missing_on_remote=$(git log "${origin_branch}..${current_brach}")
+  # extra_commits_on_remote=$(git log "${current_brach}..${origin_branch}")
   exit 1
 fi
 
-BASE_BRACH=$(hub pr list -s open -h $CURRENT_BRACH -f %B)
+base_brach=$(hub pr list -s open -h $current_brach -f %B)
 
-bold "synchronising base branch (${BASE_BRACH})"
+bold "synchronising base branch (${base_brach})"
 
 # see https://stackoverflow.com/a/17722977
-git fetch origin "${BASE_BRACH}:${BASE_BRACH}"
+git fetch origin "${base_brach}:${base_brach}"
 
-bold "doing fast-forward merge of '$CURRENT_BRACH' into '${BASE_BRACH}'"
+bold "doing fast-forward merge of '$current_brach' into '${base_brach}'"
 # see https://stackoverflow.com/a/17722977
-git fetch . "${CURRENT_BRACH}:${BASE_BRACH}"
+git fetch . "${current_brach}:${base_brach}"
 
-bold "pushing '${BASE_BRACH}'"
-git push origin "${BASE_BRACH}:${BASE_BRACH}"
-
-# Use this to set default branch for PRs
-# git remote set-head origin staging
+bold "pushing '${base_brach}'"
+git push origin "${base_brach}:${base_brach}"
