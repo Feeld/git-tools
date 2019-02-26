@@ -16,3 +16,9 @@ directly as any other shell command.
   ```shell
   fld-git-install
   ```
+
+## Dependencies
+
+Some of the included scripts depend on following 3rd party tools:
+
+- [hub](https://hub.github.com/)
