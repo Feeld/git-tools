@@ -1,0 +1,54 @@
+# $1: branch name
+
+# helpers
+bold() {
+  echo "$(tput bold)$*" "$(tput sgr0)";
+}
+
+# Get name of current branch: https://stackoverflow.com/a/6245587
+CURRENT_BRACH=$(git branch | grep \* | cut -d ' ' -f2)
+ORIGIN_BRANCH="origin/${CURRENT_BRACH}"
+
+bold "checking if PR for ${CURRENT_BRACH} exists"
+
+# Check for open PR for which head is the current branch.
+PR=$(hub pr list -s open -h $CURRENT_BRACH -f "%i: '%t' (%B)")
+
+if [ -z "$PR" ]
+then
+  echo "can't merge without an open PR"
+  exit 1
+else
+  echo "merging PR: ${PR}"
+fi
+
+bold "calling git fetch to sync origin"
+git fetch
+
+local_head=$(git log "${CURRENT_BRACH}" | head -1)
+origin_head=$(git log "${ORIGIN_BRANCH}" | head -1)
+
+if [ "$local_head" != "$origin_head" ]
+then
+  bold "'${CURRENT_BRACH}' is not in sync with '${ORIGIN_BRANCH}', aborting merge!"
+  # COMMITS_MISSING_ON_REMOTE=$(git log "${ORIGIN_BRANCH}..${CURRENT_BRACH}")
+  # EXTRA_COMMITS_ON_REMOTE=$(git log "${CURRENT_BRACH}..${ORIGIN_BRANCH}")
+  exit 1
+fi
+
+BASE_BRACH=$(hub pr list -s open -h $CURRENT_BRACH -f %B)
+
+bold "synchronising base branch (${BASE_BRACH})"
+
+# see https://stackoverflow.com/a/17722977
+git fetch origin "${BASE_BRACH}:${BASE_BRACH}"
+
+bold "doing fast-forward merge of '$CURRENT_BRACH' into '${BASE_BRACH}'"
+# see https://stackoverflow.com/a/17722977
+git fetch . "${CURRENT_BRACH}:${BASE_BRACH}"
+
+bold "pushing '${BASE_BRACH}'"
+git push origin "${BASE_BRACH}:${BASE_BRACH}"
+
+# Use this to set default branch for PRs
+# git remote set-head origin staging
