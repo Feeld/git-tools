@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "adding git aliases"
+
+echo "fld-git-mprff as mprff"
+git alias mprff "!fld-git-mprff"
+
+echo "done!"
